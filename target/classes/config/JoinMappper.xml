@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="joinMapper">
+	<!-- 1:1의 관계 문제 매칭하기(Map) -->
+	<resultMap type="CommentB" id="associationMap">
+		<id column="comment_no" property="commentNo"/>
+		<result column="user_id" property="userId"/>
+		<result column="comment_Content" property="commentContent"/>
+		<result column="reg_Date" property="regDate"/>
+		<association property="user" javaType="users"> <!-- sqlMapConfig.xml에서 지정한 별칭을 javaType으로 -->
+			<id column="user_id" property="userId"/>
+			<result column="user_name" property="userName"/>
+		</association>
+	</resultMap>
+	
+	<!-- 1:다의 관계 매칭하기 -->
+	<resultMap type="CommentB" id="collectionMap">
+		<id column="comment_no" property="commentNo"/>
+		<result column="user_id" property="userId"/>
+		<result column="comment_Content" property="commentContent"/>
+		<collection property="replyList" ofType="reply">
+			<id column="reply_no" property="replyNo"/>
+			<result column="reply_content" property="replyContent"/>
+			<result column="user_id" property="userId"/>
+			<result column="reg_date" property="regDate"/>
+		</collection>
+	</resultMap>
+	
+	<resultMap type="users" id="userCollectionMap">
+		<id column="user_id" property="userId"/>
+		<result column="user_name" property="userName"/>
+		<collection property="commentBList" ofType="commentB"> <!-- property는 users가 갖고 있는 멤버변수의 타입, ofType은 제너릭 타입을 alias 타입으로 -->
+			<id column="comment_no" property="commentNo"/>
+			<result column="user_id" property="userId"/>
+			<result column="comment_content" property="commentContent"/>
+			<result column="reg_date" property="regDate"/>
+		</collection>
+	</resultMap>
+	
+	<!-- 1:1의 관계 문제 (한 개의 comment는 한 명의 작성자 정보를 가진다.) -->	
+	<select id="associationJoin" resultMap="associationMap">
+	SELECT c.comment_No, c.user_id, u.user_name, c.comment_Content, c.reg_Date
+	FROM commentb c JOIN users u
+	ON c.user_id = u.user_id
+	</select>
+	
+	<!-- 1:다 인 경우 -->
+	<select id="collectionJoin" resultMap="collectionMap">
+	  SELECT comment_no, c.user_id, c.comment_Content, 
+       r.reply_no, r.reply_content,r.user_id, r.reg_date
+	  FROM commentB c JOIN reply r
+	  using (comment_no)
+	</select>
+	
+	<!-- 1:다 인 경우
+		user가 작성한 comment의 정보 검색하기
+	 -->
+	 <select id="userCollection" resultMap="userCollectionMap">
+	 	  select user_id, user_name, comment_no, comment_content, reg_date <!-- reg_date 추가해봤당 -->
+		  from users join commentb
+		  using(user_id) order by user_id
+	 </select>
+
+</mapper>
